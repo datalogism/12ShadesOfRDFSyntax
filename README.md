@@ -4,7 +4,9 @@
 
 This material is based on a fork of [REBEL](https://github.com/Babelscape/rebel/tree/main)
 
+## Methodological framework
 
+![Pipeline](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/120ShadesOfSyntaxes.drawio(2).png)
 
 ## Syntax examples
 
