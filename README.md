@@ -305,8 +305,15 @@ syntax_vocab=syntax_vocab+[".",",",";","\n",":","<",">"]
 ```
 :Homer_Simpson a :Person ; :Homer_Simpson :label "Homer Simpson" ; :Homer_Simpson :birthDate "1987-04-19" ; :Homer_Simpson :birthYear "1987".
 ```
-## Models
 
-## Added Vocabulary
+## RUNNING EXPERIMENTS
 
-## Metrics
+* Changing path files
+### TRAIN
+```
+   python ./src/train_withShape.py model=t5_base data=Azzzura_DS_turtleS_0datatype_1inLine_1facto_t5 train=t5_dbpedia 
+```
+### TEST
+```
+   python ./src/test_withShape.py model=bart_base_model data=Azzzura_DS_turtle_bart train=bart_dbpedia checkpoint_path=$checkpoint_path tokenizer_path=$tokenizer_path
+```
