@@ -7,6 +7,15 @@ This material is based on a fork of [REBEL](https://github.com/Babelscape/rebel/
 ## Methodological framework
 
 ![Pipeline](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/120ShadesOfSyntaxes.drawio(2).png)
+
+* We work on a DBpedia Dump, we load into a CORESE local triple store, we then extract only datatypes triples of dbo:Person in json.
+* Code of steps (1.1.) (1.2.), (2.1.), (2.2.) and (3) can be find in [1_buildD_fromShape.py](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/scripts/1_buildD_fromShape.py)
+* K-fold validation is based on https://github.com/SkafteNicki/pl_crossvalidate/tree/master
+* As usual in a Pytorch lightning project our configuration is divided into data/train/model directory
+    * BART : [training config](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/conf/train/bart_dbpedia.yaml) - [model config](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/conf/model/bart_base_model.yaml)
+    * T5 : [training config](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/conf/train/t5_dbpedia.yaml) - [model config](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/conf/model/t5_base_model.yaml)
+    * Each configuration related to syntaxes could be find in https://github.com/datalogism/12ShadesOfRDFSyntax/tree/main/conf/data
+
 ## SHACL Shape used
 ```
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
