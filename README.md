@@ -151,6 +151,21 @@ dbr:Homer_Simpson a dbo:Person ;
   </rdf:Description>
 </rdf:RDF>
 ```
+* ADDED VOCAB:
+```
+FROM #https://www.w3.org/TR/rdf-syntax-grammar/
+# "/>" not added could broke URI
+syntax_vocab=syntax_vocab+[":","</","<",">"," />","\n","="]
+# Head and comment
+syntax_vocab=syntax_vocab+["<?","?>","<!--","--!>"]
+# CORE SYNTHAX TERM
+syntax_vocab=syntax_vocab+["rdf:RDF","rdf:ID","rdf:type","rdf:about","rdf:parseType","rdf:resource","rdf:nodeID","rdf:datatype"]
+# LIST
+syntax_vocab=syntax_vocab+["rdf:li","rdf:_"]
+# XML 
+syntax_vocab=syntax_vocab+["xml:lang","xml:base","xmlns:"]
+```
+
 #### 2.3. JSON LD
 ```
 [
@@ -208,6 +223,32 @@ dbr:Homer_Simpson a dbo:Person ;
   }
 ]
 ```
+* ADDED VOCAB:
+```
+# JSON STANDARDS
+#DELETED NOT FOUND IN JSON "'"
+# FROM https://ecma-international.org/publications-and-standards/standards/ecma-404/
+# we kept \n
+syntax_vocab=syntax_vocab+["[","]","{","}",":",",",'"',"\n"]
+# W3C JSON-LD standard
+# https://www.w3.org/TR/json-ld11/#terms
+#term
+syntax_vocab=syntax_vocab+["@type"]
+# node objects
+syntax_vocab=syntax_vocab+["@set","@list","@value","@context","@id","@included","@graph","@nest","@reverse","@index"]
+# frame objects
+syntax_vocab=syntax_vocab+["@default","@null","@none","@embed","@always","@once","@explicit","@default","@omitDefault","@requiereAll"]
+# values objects
+syntax_vocab=syntax_vocab+["@value","@language","@direction"]
+# propery_based Index Maps        
+syntax_vocab=syntax_vocab+["@container"]
+# included block
+syntax_vocab=syntax_vocab+["@included"]        
+# context def
+syntax_vocab=syntax_vocab+["@import","@base","@propagate","@protected","@version","@vocab"]    
+# other
+syntax_vocab=syntax_vocab+["@json","@prefix"]
+```
 #### 2.4. NTRIPLES 
 ```
 <http://dbpedia.org/resource/Homer_Simpson> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Person> 
@@ -215,8 +256,33 @@ dbr:Homer_Simpson a dbo:Person ;
 <http://dbpedia.org/resource/Homer_Simpson> <http://dbpedia.org/ontology/birthDate> "1987-04-19"^^<xsd:date> .
 <http://dbpedia.org/resource/Homer_Simpson> <http://www.w3.org/2000/01/rdf-schema#label> "Homer Simpson"^^<xsd:string> ..
 ```
-### 3. Syntaxes proposed : **Turtle Light**
+* ADDED VOCAB:
 
+ ```
+# FOLLOWING https://www.w3.org/TR/n-triples/
+syntax_vocab=syntax_vocab+["<",">",".","\n"]
+# quote
+syntax_vocab=syntax_vocab+['"']
+# datatypes 
+syntax_vocab=syntax_vocab+["^^","@"]
+# blank nodes
+syntax_vocab=syntax_vocab+["_:"]
+ ```
+
+### 3. Syntaxes proposed : **Turtle Light**
+* ADDED VOCAB
+```
+syntax_vocab=syntax_vocab+[".",",",";","\n",":","<",">"]
+ # Literals
+ syntax_vocab=syntax_vocab+['"']
+ # Languages and datatype
+ if(conf.datatype==True):
+     syntax_vocab=syntax_vocab+["^^","@"]
+ # List / SET / TRIG
+ syntax_vocab=syntax_vocab+["[","]","{","}","(",")"]
+ # blanck nodes + a > rdf:type
+ syntax_vocab=syntax_vocab+["_:"," a "]
+ ```
 #### 3.1. Turtle Light factorised / multilines
 ```
 :Homer_Simpson a :Person ;
