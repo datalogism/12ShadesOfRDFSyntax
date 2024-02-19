@@ -1,0 +1,11 @@
+# @package _global_
+
+model_name_or_path: '/workspace/cringwald/finetuned_models/BartShape_json-ld/'
+config_name: '/workspace/cringwald/finetuned_models/BartShape_json-ld/'
+tokenizer_name: '/workspace/cringwald/finetuned_models/BartShape_json-ld/'
+cache_dir: 
+use_fast_tokenizer: True
+
+model_revision: 'main'
+use_auth_token: False
+finetune: False

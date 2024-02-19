@@ -1,0 +1,11 @@
+# @package _global_
+
+model_name_or_path: '/user/cringwal/home/Desktop/THESE_YEAR1/experiences/rebel_updated/finetuned_models/dbpedia_1'
+config_name: '/user/cringwal/home/Desktop/THESE_YEAR1/experiences/rebel_updated/finetuned_models/dbpedia_1'
+tokenizer_name: '/user/cringwal/home/Desktop/THESE_YEAR1/experiences/rebel_updated/finetuned_models/dbpedia_1'
+cache_dir: 
+use_fast_tokenizer: True
+
+model_revision: 'main'
+use_auth_token: False
+finetune: False
