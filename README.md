@@ -8,13 +8,15 @@ This material is based on a fork of [REBEL](https://github.com/Babelscape/rebel/
 
 ![Pipeline](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/120ShadesOfSyntaxes.drawio(2).png)
 
-* We work on a DBpedia Dump, we load into a CORESE local triple store, we then extract only datatypes triples of dbo:Person in json.
-* Code of steps (1.1.) (1.2.), (2.1.), (2.2.) and (3) can be find in [1_buildD_fromShape.py](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/scripts/1_buildD_fromShape.py)
+* We work on a DBpedia Dump, we load into a CORESE local triple store, we then extract only datatypes triples of dbo:Person in JSON.
+* Code of steps (1.1.) (1.2.), (2.1.), (2.2.) and (3) can be found in [1_buildD_fromShape.py](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/scripts/1_buildD_fromShape.py)
 * K-fold validation is based on https://github.com/SkafteNicki/pl_crossvalidate/tree/master
 * As usual in a Pytorch lightning project our configuration is divided into data/train/model directory
     * BART : [training config](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/conf/train/bart_dbpedia.yaml) - [model config](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/conf/model/bart_base_model.yaml)
     * T5 : [training config](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/conf/train/t5_dbpedia.yaml) - [model config](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/conf/model/t5_base_model.yaml)
-    * Each configuration related to syntaxes could be find in https://github.com/datalogism/12ShadesOfRDFSyntax/tree/main/conf/data
+    * Each configuration related to syntaxes can be found at https://github.com/datalogism/12ShadesOfRDFSyntax/tree/main/conf/data
+ * Specific parser and triples utils: https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/src/triples_fct.py 
+ * Metrics computation implementation: https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/src/score_fct.py, https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/src/score.py
 
 ## SHACL Shape used
 ```
@@ -79,7 +81,7 @@ sh:property [
  ].
 ```
 
-## Syntax examples
+## Syntax details
 
 ### 1. Syntax of literature
 #### 1.1. LIST
@@ -91,6 +93,8 @@ sh:property [
 ```
 [['Homer_Simpson',[ ['type', 'Person'], ['label', 'Homer Simpson'], ['birthDate', '1987-04-19'], ['birthYear', '1987']]]
 ```
+* ADDED vocab:
+```["[","]",",","'"]```
 #### 1.2. TAGS
 * Normal:
 ```
@@ -100,6 +104,9 @@ sh:property [
 ```
 <subj>Homer_Simpson<rel>type<obj>Person<et><rel>label<obj>Homer Simpson<et><rel>birthDate<obj>1987-04-19<et><rel>birthYear<obj>1987<et>
 ```
+* ADDED vocab:
+```["<subj>","<rel>","<obj>","<et>"]```
+
 ### 2. RDF syntaxes
 #### 2.1. Turtle
 ```
@@ -111,6 +118,22 @@ dbr:Homer_Simpson a dbo:Person ;
     rdfs:label "Homer Simpson"^^<xsd:string> ;
     dbo:birthDate "1987-04-19"^^<xsd:date> ;
     dbo:birthYear "1987"^^<xsd:gYear>.
+```
+
+* ADDED vocab:
+```
+# FOLLOWING  https://www.w3.org/TR/rdf12-turtle/#language-features
+[".",",",";","\n",":","<",">"]
+# IRI ref
+["@base","@prefix"]
+# Literals
+["'",'"',"'''",'"""']
+# Languages and datatype
+["^^","@"]
+# List / SET / TRIG
+["[","]","{","}","(",")"]
+# blanck nodes + a > rdf:type
+["_:"," a "]
 ```
 #### 2.2. XML
 ```
