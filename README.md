@@ -4,11 +4,14 @@
 
 This material is based on a fork of [REBEL](https://github.com/Babelscape/rebel/tree/main)
 
+> All the finetuned model, results and training details are available here : [https://wandb.ai/celian-ringwald/12ShadesOfRDF](https://wandb.ai/celian-ringwald/12ShadesOfRDF)
+
+
 ## Methodological framework
 
 ![Pipeline](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/120ShadesOfSyntaxes.drawio(2).png)
 
-* We work on a DBpedia Dump, we load into a CORESE local triple store, we then extract only datatypes triples of dbo:Person in JSON.
+* We work on a [DBpedia Dump](https://auth.dbpedia.org/realms/dbpedia/protocol/openid-connect/auth?client_id=databus&scope=openid%20profile%20email&response_type=id_token&redirect_uri=https%3A%2F%2Fdatabus.dbpedia.org%2Fapp%2Fcallback&response_mode=form_post&prompt=none&nonce=yBd4sV9lC_xTEG9XV_rX-ndo4btioIuXOp03UNBaIKc&state=eyJyZXR1cm5UbyI6Ii9kYnBlZGlhL2NvbGxlY3Rpb25zL2RicGVkaWEtc25hcHNob3QtMjAyMi0wOSIsImF0dGVtcHRpbmdTaWxlbnRMb2dpbiI6dHJ1ZX0), we load into a local [CORESE triple store](https://github.com/Wimmics/corese), we then extract only datatypes triples of dbo:Person in JSON.
 * Code of steps (1.1.) (1.2.), (2.1.), (2.2.) and (3) can be found in [1_buildD_fromShape.py](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/scripts/1_buildD_fromShape.py)
 * K-fold validation is based on https://github.com/SkafteNicki/pl_crossvalidate/tree/master
 * As usual in a Pytorch lightning project our configuration is divided into data/train/model directory
@@ -317,3 +320,5 @@ syntax_vocab=syntax_vocab+[".",",",";","\n",":","<",">"]
 ```
    python ./src/test_withShape.py model=bart_base_model data=Azzzura_DS_turtle_bart train=bart_dbpedia checkpoint_path=$checkpoint_path tokenizer_path=$tokenizer_path
 ```
+
+Being able to test out of the training pipeline and solve [https://github.com/Babelscape/rebel/issues/55](https://github.com/Babelscape/rebel/issues/55), we extended [pl_modules.py](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/src/pl_modules.py) by redefining checkpoint loaders classes.
