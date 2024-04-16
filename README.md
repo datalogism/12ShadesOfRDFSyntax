@@ -1,5 +1,7 @@
 # 12ShadesOfRDFSyntax
 
+![QuestionIllustration](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/Screenshot%20from%202024-02-16%2016-49-51.png)
+
  :tada:The paper was accepted at ESWC 2024 at the Special Track on Large Language Models for Knowledge Engineering
 
 
@@ -20,7 +22,6 @@ If you use the code or cite our work, please reference this one as follows (temp
 
 ```
  
-![QuestionIllustration](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/Screenshot%20from%202024-02-16%2016-49-51.png)
 
 This material is based on a fork of [REBEL](https://github.com/Babelscape/rebel/tree/main)
 
