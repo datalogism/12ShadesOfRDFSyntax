@@ -17,6 +17,8 @@ If you use the code or cite our work, please reference this one as follows (temp
   HAL_VERSION = {v1},
 }
 
+
+```
  
 ![QuestionIllustration](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/Screenshot%20from%202024-02-16%2016-49-51.png)
 
@@ -24,8 +26,6 @@ This material is based on a fork of [REBEL](https://github.com/Babelscape/rebel/
 
 > All the finetuned model, results and training details are available here : [https://wandb.ai/celian-ringwald/12ShadesOfRDF](https://wandb.ai/celian-ringwald/12ShadesOfRDF)
 
-
-```
 
 ## Methodological framework
 
