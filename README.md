@@ -1,11 +1,31 @@
 # 12ShadesOfRDFSyntax
 
+ :tada:The paper was accepted at ESWC 2024 at the Special Track on Large Language Models for Knowledge Engineering
+
+
+If you use the code or cite our work, please reference this one as follows (temporary) :
+```
+@unpublished{ringwald:hal-04548076,
+  TITLE = {{12 shades of RDF: Impact of Syntaxes on Data Extraction with Language Models}},
+  AUTHOR = {Ringwald, Célian and Gandon, Fabien and Faron, Catherine and Michel, Franck and Abi Akl, Hanna},
+  URL = {https://hal.science/hal-04548076},
+  NOTE = {Accepted at ESWC 2024},
+  YEAR = {2024},
+  MONTH = Apr,
+  KEYWORDS = {Data extraction ; RDF ; Linearization ; Language Model},
+  HAL_ID = {hal-04548076},
+  HAL_VERSION = {v1},
+}
+
+ 
 ![QuestionIllustration](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/Screenshot%20from%202024-02-16%2016-49-51.png)
 
 This material is based on a fork of [REBEL](https://github.com/Babelscape/rebel/tree/main)
 
 > All the finetuned model, results and training details are available here : [https://wandb.ai/celian-ringwald/12ShadesOfRDF](https://wandb.ai/celian-ringwald/12ShadesOfRDF)
 
+
+```
 
 ## Methodological framework
 
