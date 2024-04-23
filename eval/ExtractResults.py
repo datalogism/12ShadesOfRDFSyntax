@@ -203,18 +203,7 @@ def main():
                                             if("large" in tmp_model):
                                                 temp_name+="_l"
 
-                                        elif("codet5" in tmp_model):
-                                            temp_name="cT5"
-                                            if("p-" in tmp_model):
-                                                temp_name+="+"
-                                            if("bimodal" in tmp_model):
-                                                temp_name+="b"
-                                            if("220m" in tmp_model):
-                                                temp_name+="_b"
-                                            if("base" in tmp_model):
-                                                temp_name+="_b"
-                                            if("small" in tmp_model):
-                                                temp_name+="_s"
+                    
 
                                         elif("t5" in tmp_model):
                                             temp_name="T5"
