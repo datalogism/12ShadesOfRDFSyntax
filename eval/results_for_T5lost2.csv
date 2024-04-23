@@ -1,0 +1,2 @@
+,tag_name,R_TP,R_CS,R_SVT,F1-,F1+,P-,P+,R-,R+,B,lev,nb_epoch,Sat_F1-,V_F1-,S_F1-,D_F1-,Sat_F1+,V_F1+,S_F1+,D_F1+,Sat_RTP,V_RTP,S_RTP,D_RTP,Cc,Tt,Gg,val_loss,tokenizer_path,date,syntax,space,add_vocab,path_best,model_name_or_path
+0,T5_b_v_t_1_f,1.0,0.9996000051498413,1.0,99.5144058227539,93.93936331879272,,95.48059282152735,,93.1349465571309,0.9605766534805298,,14.4,5,0.2,,3,,,,0,5,0.2,,0,,55.56270743290584,93.90178805723801,0.02213022895157337,,,turtleS,celian-ringwald,True,,
