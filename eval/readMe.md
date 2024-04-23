@@ -2,7 +2,7 @@
 
 ## TABLE CONSTRUCTION
 
-The metrics computed in Table 1 of our paper are obtained with the helps of the [ExtractResults.py](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/eval/ExtractResults.py) that first extract metrics from the server and connect existing artefact to wandb runs available at [https://wandb.ai/celian-ringwald/12ShadesOfRDF?](https://wandb.ai/celian-ringwald/12ShadesOfRDF). This script produced the json that retrieve for each folds tokenizer path, and the checkpoints path, and the carbon cost.
+The metrics computed in Table 1 of our paper are obtained with the helps of the [ExtractResults.py](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/eval/ExtractResults.py) that first extract metrics from the server and connect existing artefact to wandb runs available at [https://wandb.ai/celian-ringwald/12ShadesOfRDF](https://wandb.ai/celian-ringwald/12ShadesOfRDF). This script produced the json that retrieve for each folds tokenizer path, and the checkpoints path, and the carbon cost.
 
 We combine both this json file with the wandb data to compute as we describe bellow the three sets of aggregated data : 
 * [results_12ShadesSyntax_MEAN_NAIVE.csv](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/eval/results_12ShadesSyntax_MEAN_NAIVE.csv)
