@@ -42,6 +42,8 @@ This material is based on a fork of [REBEL](https://github.com/Babelscape/rebel/
  * Specific parser and triples utils: https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/src/triples_fct.py 
  * Metrics computation implementation: https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/src/score_fct.py, https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/src/score.py
 
+[EDIT]: After review we better formalise our training behaviors metrics for more details check [this page](https://github.com/datalogism/12ShadesOfRDFSyntax/tree/main/eval)
+
 ## SHACL Shape used
 ```
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
