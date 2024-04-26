@@ -12,18 +12,14 @@ As presented in the paper designed three meta-metrics:
 
 ## Why we do need to better formalise our metrics?
 
-First, $F_1^+$ metrics **never** saturate on the 5 folds in the case of our experimental design; So we prefer to focus on $F_1^-$. 
+This is still important to formalise with math a metric or any computation methods, especially because our inital definitions were so vague and conducted to several issues.
 
-Nevertheless, $R_{TP}$ and $F_1^-$  can still face to the following issues: 
 * [Issue.1] When the saturation doesn't happen on a fold we do not know how to aggregate velocity metric ($V_M$) 
-* [Issue.2] When models never get worse on every fold we do not know how to compute the saturation metric ($S_M$)
+* [Issue.2] The stability process initially proposed was described as "the ratio of epochs during which a metric gets worse after the first saturation" but this definition relates more to instability metric than stability, so we corrected it. 
 
-Let's take a look at a concrete example, where $nb_{fold}=4$ on the computation of the velocity ( $V_{F^-_1}$). 
-The $f_2$, the first fold is saturating at the epoch number 3 and seems to diverge : 
+Let's take a look at a concrete example illustrated on Fig~\ref{fig1} where $nb_{runs}=4$ illustrating [Issue.1] on the computation of the velocity ( $V_{F^-_1}$).
 
 ![Image Example](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/eval/MetricsExample.png)
-
-**We can see here the illustration of Issue.1 on the forth fold and the Issue.2 at the second fold**
 
 ### Three ways to compute the aggregation
 
@@ -32,7 +28,7 @@ The $f_2$, the first fold is saturating at the epoch number 3 and seems to diver
 * **Wise mean**:  $`\widetilde{V_{F^-_1}}=(3+6+1)/3`$, we add together the different $`V_{F^-_1}`$ and divide by the number of folds where the saturation happens
 ## FORMALISATION
 
-Let there be a $model$ we wanna evaluate on $n_f$ folds. This $model$ is trained on a period of $1$ to $n_{steps}$. During the evaluation process, we compute at step $i$ the metric $M_{i}$ we want to study, where  $0 \leqslant M_{f,i} \leqslant 1$. 
+Let there be a $model$ we want to evaluate on $n_f$ folds. This $model$ is trained on a period of $1$ to $n_{steps}$. During the evaluation process, we compute at step $i$ the metric $M_{i}$ we want to study, where  $0 \leqslant M_{f,i} \leqslant 1$. 
 
 
 ### The Velocity
@@ -41,6 +37,11 @@ We define the **Velocity** of a given fold f on M as follows :
 ```math
 V_{M_f}=min(\{ i | i \in  [ 1; n_{epoch} ]; \exists M_{f,i} > 0.9\})
 ```
+##### Interpretations
+When $V_{M_r}$ is close to $0$, it means that the model evaluated convergence to saturation early.
+Conversely, when $V_{M_r}$ is close to $1$, it means that the model evaluated convergence to saturation at the end of the training process.
+
+#### Aggregation
 The **strict** computation of this metric will be :
 ```math
 \overline{V_{M}}=\left\{ 
