@@ -30,7 +30,7 @@ This material is based on a fork of [REBEL](https://github.com/Babelscape/rebel/
 
 ## Methodological framework
 
-![Pipeline](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/120ShadesOfSyntaxes.drawio(2)(2).png)
+![Pipeline](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/120ShadesOfSyntaxes.drawio(2).png)
 
 * We work on a [DBpedia Dump](https://auth.dbpedia.org/realms/dbpedia/protocol/openid-connect/auth?client_id=databus&scope=openid%20profile%20email&response_type=id_token&redirect_uri=https%3A%2F%2Fdatabus.dbpedia.org%2Fapp%2Fcallback&response_mode=form_post&prompt=none&nonce=yBd4sV9lC_xTEG9XV_rX-ndo4btioIuXOp03UNBaIKc&state=eyJyZXR1cm5UbyI6Ii9kYnBlZGlhL2NvbGxlY3Rpb25zL2RicGVkaWEtc25hcHNob3QtMjAyMi0wOSIsImF0dGVtcHRpbmdTaWxlbnRMb2dpbiI6dHJ1ZX0), we load into a local [CORESE triple store](https://github.com/Wimmics/corese), we then extract only datatypes triples of dbo:Person in JSON.
 * Code of steps (1.1.) (1.2.), (2.1.), (2.2.) and (3) can be found in [1_buildD_fromShape.py](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/scripts/1_buildD_fromShape.py)
