@@ -12,7 +12,7 @@ As presented in the paper designed three meta-metrics:
 
 ## Why we do need to better formalise our metrics?
 
-This is still important to formalise with math a metric or any computation methods, especially because our inital definitions were so vague and conducted to several issues.
+This is still important to formalise with math a metric or any computation methods, especially because our initial definitions were so vague and conducted to several issues.
 
 * [Issue.1] When the saturation doesn't happen on a fold we do not know how to aggregate velocity metric ($V_M$) 
 * [Issue.2] The stability process initially proposed was described as "the ratio of epochs during which a metric gets worse after the first saturation" but this definition relates more to instability metric than stability, so we corrected it. 
@@ -78,12 +78,19 @@ To be able to define the **Stability** we need first to define what is the set o
 broken\_steps_{f}= \{j | j \in ]V_{M_f}, n_{epoch}]; M_{f,j} <0.9 \}
 ```
 
+##### Interpretations
+
+
+Let's $`\|broken\_steps_{f}\|`$ the cardinality of the broken steps set. If $`\|broken\_steps_{f}\|`$ close $n_{epoch}$ it means that the models is 
+
+
+
 ### The Stability
 
 The  **Stability** metric is computed for a given fold $f$ as follows,:
 
 ```math
-S_{M_f}= \frac{\|broken\_steps_{f}\|}{n_{epoch}}$$}
+S_{M_f}= 1- \frac{\|broken\_steps_{f}\|}{n_{epoch}}$$}
 ```
  where $`\|broken\_steps_{f}\|`$ the cardinality of the broken steps set.
 
