@@ -12,12 +12,15 @@ As presented in the paper designed three meta-metrics:
 
 ## Why we do need to better formalise our metrics?
 
-This is still important to formalise with math a metric or any computation methods, especially because our initial definitions were so vague and conducted to several issues.
+This is still important to formalise with math a metric or any computation methods, especially because our initial definitions were so vague and conducted to several issues. 
 
-* [Issue.1] When the saturation doesn't happen on a fold we do not know how to aggregate velocity metric ($V_M$) 
-* [Issue.2] The stability process initially proposed was described as "the ratio of epochs during which a metric gets worse after the first saturation" but this definition relates more to instability metric than stability, so we corrected it. 
 
-Let's take a look at a concrete example illustrated on Fig~\ref{fig1} where $nb_{runs}=4$ illustrating [Issue.1] on the computation of the velocity ( $V_{F^-_1}$).
+
+* [Issue.1] When the saturation doesn't happen on a fold $V_M$ has no value and we are not able to compute $S_{M_f}$.
+* [Issue.2] When the saturation doesn't happen on a fold we do not know how to aggregate velocity metric ($V_M$) 
+* [Issue.3] The stability process initially proposed was described as "the ratio of epochs during which a metric gets worse after the first saturation" but this definition relates more to instability metric than stability, so we corrected it. 
+
+Let's take a look at a concrete example illustrated on Fig~\ref{fig1} where $nb_{runs}=4$ illustrating [Issue.1] & [Issue.2] on the computation of the velocity ( $V_{F^-_1}$).
 
 ![Image Example](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/eval/MetricsExample.png)
 
@@ -38,8 +41,9 @@ We define the **Velocity** of a given fold f on M as follows :
 V_{M_f}=min(\{ i | i \in  [ 1; n_{epoch} ]; \exists M_{f,i} > 0.9\})
 ```
 ##### Interpretations
-When $V_{M_r}$ is close to $0$, it means that the model evaluated convergence to saturation early.
-Conversely, when $V_{M_r}$ is close to $1$, it means that the model evaluated convergence to saturation at the end of the training process.
+
+* When $V_{M_r}$ is close to $0$, it means that the model evaluated convergence to saturation early.
+* Conversely, when $V_{M_r}$ is close to $1$, it means that the model evaluated convergence to saturation at the end of the training process.
 
 #### Aggregation
 The **strict** computation of this metric will be :
@@ -73,41 +77,42 @@ The **naive** computation of this metric with $n_f$ the number total of folds, a
 
 ### The Broken steps set
 
-To be able to define the **Stability** we need first to define what is the set of the $`broken\_steps`$ for a given fold $f$, this set gathers all the index of the steps where the metric of interest was smaller than the value of this same metric at the first saturation  :
+To be able to define the **Stability** we need first to define what is the set of the $`broken\_steps`$ for a given fold $f$, this set gathers all the index of the steps where the metric of interest was smaller than the value of this same metric at the first saturation level ($ M_{f,j}$) :
 ```math
 broken\_steps_{f}= \{j | j \in ]V_{M_f}, n_{epoch}]; M_{f,j} <0.9 \}
 ```
 
-##### Interpretations
-
-
-Let's $`\|broken\_steps_{f}\|`$ the cardinality of the broken steps set. If $`\|broken\_steps_{f}\|`$ close $n_{epoch}$ it means that the models is 
-
-
 
 ### The Stability
 
-The  **Stability** metric is computed for a given fold $f$ as follows,:
+The  **Stability** metric  is  computed for a given fold $f$ as follows :
 
 ```math
 S_{M_f}= 1- \frac{\|broken\_steps_{f}\|}{n_{epoch}}$$}
 ```
  where $`\|broken\_steps_{f}\|`$ the cardinality of the broken steps set.
 
+##### Interpretations
+
+* The stability $S_{M_f}$ is close to 0, when $\|broken\_steps_{f}\|$  is also close to $n_{epoch}$. This case reflects the instability of the model depending of a given metric $M_{f,j}$.
+* On the contrary, if the stability  $S_{M_f}$ is close to 1, we are in case where the $M_{f,j}$ is remaining stable during the training process.  
+
+
+#### Aggregation
 * The **strict** computation of this metric will be computed as:
  ```math
-\overline{S_{M_f}}=\left\{ 
+\overline{S_{M}}=\left\{ 
   \begin{array}{ c l }
-    \frac{1}{n_{f}}\sum{S_{M_f}} & \quad \textrm{if} \forall f \exists \|broken\_steps_{f}\| \ne  \varnothing \wedge \exists V_{M_f} \\
+    \frac{1}{n_{f}}\sum{S_{M_f}}  & \quad \textrm{if } \forall f \exists M_{f,i}>0.9 \ \\
     \varnothing       & \quad \textrm{otherwise} 
   \end{array}
 \right.
 ```
 * The **wise** computation of this metric will be computed with $n_F$ the number of folds where saturation happens as follows :
  ```math
-\widetilde{S_{M_f}}=\left\{ 
+\widetilde{S_{M}}=\left\{ 
   \begin{array}{ c l }
-    \frac{1}{n_{F}}\sum{V_{M_f}} & \quad \textrm{if} \exists f \textrm{where}\exists \|broken\_steps_{f}\| \ne  \varnothing \wedge \exists V_{M_f} \ \ \\
+    \frac{1}{n_{F}}\sum{S_{M_f}} &  \quad \textrm{if } \exists f \textrm{where } \exists M_{f,i}>0.9 \ \\
     \varnothing       & \quad \textrm{otherwise} 
   \end{array}
 \right.
@@ -115,14 +120,13 @@ S_{M_f}= 1- \frac{\|broken\_steps_{f}\|}{n_{epoch}}$$}
 
 * The **naive** computation of this metric will be computed with $n_f$ the number total of folds, as follows:
  ```math
-\widehat{S_{M_f}}=\left\{ 
+\widehat{S_{M}}=\left\{ 
   \begin{array}{ c l }
-    \frac{1}{n_{f}}\sum{V_{M_f}} & \quad \textrm{if} \exists f \textrm{where} \exists \|broken\_steps_{f}\| \ne  \varnothing \wedge \exists V_{M_f} \ \ \\
+    \frac{1}{n_{f}}\sum{S_{M_f}} & \quad \textrm{if } \exists f \textrm{where } \exists M_{f,i}>0.9 \ \\
     \varnothing       & \quad \textrm{otherwise} 
   \end{array}
 \right.
 ```
-
 
 ### The Divergence
 
@@ -137,6 +141,18 @@ D_{M_f}=\left\{
   \end{array}
 \right.
 ```
+
+##### Interpretations
+
+* The divergence $S_{M_f} = 0$ is close to 0 when the model isn't diverging at the last step of training from the value obtained at the first saturation
+* On the contrary, the divergence $S_{M_f} = 1$ when the value at the last step of training of $M_f$ is lower than the value obtained at the first saturation
+
+##### Aggregation
+
+For a given model the Divergence is aggrageted on the $f$ folds via a sum:
+ ```math
+\sum{D_{M}}= 	\sum_{i=1}^{f} D_{M_f} 
+ ```
 
 
 ## TABLE CONSTRUCTION
