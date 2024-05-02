@@ -14,21 +14,24 @@ As presented in the paper designed three meta-metrics:
 
 This is still important to formalise with math a metric or any computation methods, especially because our initial definitions were so vague and conducted to several issues. 
 
-
-
 * [Issue.1] When the saturation doesn't happen on a fold $V_M$ has no value and we are not able to compute $S_{M_f}$.
 * [Issue.2] When the saturation doesn't happen on a fold we do not know how to aggregate velocity metric ($V_M$) 
 * [Issue.3] The stability process initially proposed was described as "the ratio of epochs during which a metric gets worse after the first saturation" but this definition relates more to instability metric than stability, so we corrected it. 
 
-Let's take a look at a concrete example illustrated on Fig~\ref{fig1} where $nb_{runs}=4$ illustrating [Issue.1] & [Issue.2] on the computation of the velocity ( $V_{F^-_1}$).
+Let's take a look at a concrete example illustrated on Fig1 where $nb_{runs}=4$ illustrating [Issue.1] & [Issue.2] on the computation of the velocity ( $V_{F^-_1}$).
 
 ![Image Example](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/eval/MetricsExample.png)
+
+### The choice of $`V_{F^-_1}`$ over $`V_{F^+_1}`$
+
+The $`V_{F^{-}_1}`$ initially presented never saturates on the 5-fold experienced design. Only $`B_{vT}`$ and $`B_{vg}`$ have a few fold saturating cf([results_12ShadesSyntax_MEAN_WISE](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/eval/results_12ShadesSyntax_MEAN_WISE.csv)). For this reason we prefer to focus on the training behaviours of $V_{F^-_1}$ generally saturating at in almost every case.
 
 ### Three ways to compute the aggregation
 
 * **STRICT** : $`\overline{V_{F^-_1}}=\emptyset`$  because one of the folds doesn't saturate or $`\overline{V_{F^-_1}}=+\infty`$
 * **Naive mean** :  $`\widehat{V_{F^-_1}}=(3+6+1)/4`$, we add together the different $`V_{F^-_1}`$ and divide by the number of folds
 * **Wise mean**:  $`\widetilde{V_{F^-_1}}=(3+6+1)/3`$, we add together the different $`V_{F^-_1}`$ and divide by the number of folds where the saturation happens
+
 ## FORMALISATION
 
 Let there be a $model$ we want to evaluate on $n_f$ folds. This $model$ is trained on a period of $1$ to $n_{steps}$. During the evaluation process, we compute at step $i$ the metric $M_{i}$ we want to study, where  $0 \leqslant M_{f,i} \leqslant 1$. 
