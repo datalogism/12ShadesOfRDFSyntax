@@ -5,19 +5,38 @@
  :tada:The paper was accepted at ESWC 2024 at the Special Track on Large Language Models for Knowledge Engineering
 
 
-If you use the code or cite our work, please reference this one as follows (temporary) :
+If you use the code or cite our work, please reference this one as follows :
 ```
-@unpublished{ringwald:hal-04548076,
-  TITLE = {{12 shades of RDF: Impact of Syntaxes on Data Extraction with Language Models}},
-  AUTHOR = {Ringwald, Célian and Gandon, Fabien and Faron, Catherine and Michel, Franck and Abi Akl, Hanna},
-  URL = {https://hal.science/hal-04548076},
-  NOTE = {Accepted at ESWC 2024},
-  YEAR = {2024},
-  MONTH = Apr,
-  KEYWORDS = {Data extraction ; RDF ; Linearization ; Language Model},
-  HAL_ID = {hal-04548076},
-  HAL_VERSION = {v1},
+@InProceedings{10.1007/978-3-031-78952-6_8,
+author="Ringwald, C{\'e}lian
+and Gandon, Fabien
+and Faron, Catherine
+and Michel, Franck
+and Akl, Hanna Abi",
+editor="Mero{\~{n}}o Pe{\~{n}}uela, Albert
+and Corcho, Oscar
+and Groth, Paul
+and Simperl, Elena
+and Tamma, Valentina
+and Nuzzolese, Andrea Giovanni
+and Poveda-Villal{\'o}n, Maria
+and Sabou, Marta
+and Presutti, Valentina
+and Celino, Irene
+and Revenko, Artem
+and Raad, Joe
+and Sartini, Bruno
+and Lisena, Pasquale",
+title="12 Shades of RDF: Impact of Syntaxes on Data Extraction with Language Models",
+booktitle="The Semantic Web: ESWC 2024 Satellite Events",
+year="2025",
+publisher="Springer Nature Switzerland",
+address="Cham",
+pages="81--91",
+abstract="The fine-tuning of generative pre-trained language models (PLMs) on a new task can be impacted by the choice made for representing the inputs and outputs. This article focuses on the linearization process used to structure and represent, as output, facts extracted from text. On a restricted relation extraction (RE) task, we challenged T5 and BART by fine-tuning them on 12 linearizations, including RDF standard syntaxes and variations thereof. Our benchmark covers: the validity of the produced triples, the performance of the model, the training behaviours and the resources needed. We show these PLMs can learn some syntaxes more easily than others, and we identify a promising ``Turtle Light'' syntax supporting the quick and robust learning of the RE task.",
+isbn="978-3-031-78952-6"
 }
+
 
 
 ```
