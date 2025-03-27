@@ -29,7 +29,6 @@ import logging
 import math
 from collections import defaultdict
 
-print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX INSIDE DATASET.PY")
 _DESCRIPTION = """\
 DBpedia first test 
 """
@@ -63,7 +62,6 @@ def getShortenAbstract( context_shorter ):
 class DBPediaTestConfig(datasets.BuilderConfig):
     """BuilderConfig for DBpediatest."""
 
-print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX INSIDE DATASET.PY")
     def __init__(self, **kwargs):
         """BuilderConfig for REBEL.
         Args:
@@ -75,7 +73,6 @@ print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX INSIDE DATASET.PY")
 class DBpediaTest(datasets.GeneratorBasedBuilder):
     """Rebel 1.0"""
 
-    print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX INSIDE DATASET.PY")
     BUILDER_CONFIGS = [
         DBPediaTestConfig(
             name="plain_text",

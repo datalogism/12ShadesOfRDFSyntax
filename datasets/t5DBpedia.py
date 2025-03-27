@@ -22,14 +22,12 @@ import pandas as pd
 
 import datasets
 
-from transformers import T5Tokenizer
 import re 
 import json
 import logging
 import math
 from collections import defaultdict
 
-print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX INSIDE DATASET.PY")
 _DESCRIPTION = """\
 DBpedia first test 
 """
@@ -41,29 +39,10 @@ _URLS = {
     "test": _URL + "_test.jsonl",
 }
 
-from transformers import BartForConditionalGeneration, AutoTokenizer
-
-def getShortenAbstract( context_shorter ):
-    
-    tokenizer = T5Tokenizer.from_pretrained(
-            "t5-base"
-        )
-
-    tokenized=tokenizer.encode(context_shorter, add_special_tokens=True)
-
-    n=0
-    while(len(tokenized)>512):
-        context_shorter=".".join([part for part in context_shorter.split(".") if part != ""][:-1])
-        tokenized=tokenizer.encode(context_shorter, add_special_tokens=True)
-        n += 1
-    # if(context_shorter[0:3]=="<s>"):
-    #     context_shorter=context_shorter[3:len(context_shorter)]
-    return context_shorter
 
 class DBPediaTestConfig(datasets.BuilderConfig):
     """BuilderConfig for DBpediatest."""
 
-print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX INSIDE DATASET.PY")
     def __init__(self, **kwargs):
         """BuilderConfig for REBEL.
         Args:
@@ -75,7 +54,6 @@ print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX INSIDE DATASET.PY")
 class DBpediaTest(datasets.GeneratorBasedBuilder):
     """Rebel 1.0"""
 
-    print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX INSIDE DATASET.PY")
     BUILDER_CONFIGS = [
         DBPediaTestConfig(
             name="plain_text",
@@ -121,76 +99,16 @@ class DBpediaTest(datasets.GeneratorBasedBuilder):
     def _generate_examples(self, filepath):
         """This function returns the examples in the raw (text) form."""
         logging.info("generating examples from = %s", filepath)
-        #print(">>>>>>>>>>>>>>>>>>>>>>>>"+self.config.syntax_name)
+        
         with open(filepath) as json_file:
             f = json.load(json_file)
             print("============================")
-            
-
+            print(f[0]["triples"])
+            print("FILE LOADED")
             for id_, row in enumerate(f):
-                # #triples=row["triples"].replace("<s>","").replace("</s>","").replace("s>","")
-                # triples=row["triples"].replace("s>","<s>").replace("<s>","").replace("</s>","")
-             
-
-                # abstract=row["abstract"].replace("s>","<s>").replace("<s>","").replace("</s>","")
-                # if(abstract[0:3]=="<s>"):
-                #     asbtract=abstract[3:len(abstract)]
-                # else:
-                #     asbtract=abstract  
-                # abstract = "translate text to graph: "+ abstract
-
-                # if("ent" in row.keys()):
-                #     entity=row["ent"]
-                # elif("entity" in row.keys()):
-                #     entity=row["entity"]
-
-                if(row["triples"][0:3]!="<s>"):
-                    triples="<s>"+row["triples"]+"</s>"
-                else:
-                    triples=row["triples"]
-
-                ## FOR SOLVING T5 tokenizer pb
-                triples = triples.replace("\n"," \n ")
-
-                # if(row["abstract"][0:3]=="<s>"):
-                #     abstract=row["abstract"][3:len(row["abstract"])]
-                # else:
-                #print(triples)
-                abstract=row["abstract"]
-
-                syntax_name=""
-
-                if("list" in filepath):
-                    syntax_name="List"
-                if("list_facto" in filepath):
-                    syntax_name="List facto"
-                if("tags" in filepath):
-                    syntax_name="Tags"
-                if("tags_facto" in filepath):
-                    syntax_name="Tags facto"
-                if("json-ld" in filepath):
-                    syntax_name="Json-ld"
-                if("xml" in filepath):
-                    syntax_name="XML"
-                if("ntriples" in filepath):
-                    syntax_name="Ntriples"
-                if("turtle" in filepath):
-                    syntax_name="Turtle"
-
-
-                if("ent" in row.keys()):
-                    entity=row["ent"]
-                elif("entity" in row.keys()):
-                    entity=row["entity"]
-
-                ### CHANGE TO ENGLISH TO...
-                abstract = "Translate English to "+syntax_name+" : ["+ entity+"] "+ abstract  
-        
-
-
                 yield str(id_), {
-                    "label": entity,
-                    "context": abstract.strip(),
+                    "label": row["entity"],
+                    "context": row["abstract"],
                     "id": str(id_),
-                    "triplets": triples
+                    "triplets": "<s>"+row["triples"]+"</s>",
                 }

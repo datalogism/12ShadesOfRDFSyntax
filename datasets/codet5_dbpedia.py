@@ -22,14 +22,13 @@ import pandas as pd
 
 import datasets
 
-from transformers import T5Tokenizer
+from transformers import T5Tokenizer, RobertaTokenizer
 import re 
 import json
 import logging
 import math
 from collections import defaultdict
 
-print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX INSIDE DATASET.PY")
 _DESCRIPTION = """\
 DBpedia first test 
 """
@@ -48,6 +47,11 @@ def getShortenAbstract( context_shorter ):
     tokenizer = T5Tokenizer.from_pretrained(
             "t5-base"
         )
+    tokenizer = RobertaTokenizer.from_pretrained(
+            'Salesforce/codet5-base',
+            trust_remote_code=True,
+            **tokenizer_kwargs
+        )
 
     tokenized=tokenizer.encode(context_shorter, add_special_tokens=True)
 
@@ -63,7 +67,6 @@ def getShortenAbstract( context_shorter ):
 class DBPediaTestConfig(datasets.BuilderConfig):
     """BuilderConfig for DBpediatest."""
 
-print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX INSIDE DATASET.PY")
     def __init__(self, **kwargs):
         """BuilderConfig for REBEL.
         Args:
@@ -75,7 +78,6 @@ print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX INSIDE DATASET.PY")
 class DBpediaTest(datasets.GeneratorBasedBuilder):
     """Rebel 1.0"""
 
-    print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX INSIDE DATASET.PY")
     BUILDER_CONFIGS = [
         DBPediaTestConfig(
             name="plain_text",
