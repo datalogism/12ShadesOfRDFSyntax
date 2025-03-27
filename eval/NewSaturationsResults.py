@@ -14,7 +14,7 @@ import pandas as pd
 import wandb
 
 api = wandb.Api()
-API_KEY="5f4208dc97c7b3542281b94b64eb42833243cc71"
+API_KEY="YOURAPI"
 wandb.login(key=API_KEY)
 All_data=[]
 ####################" THIS FUNCTION ALLOWS TO 
