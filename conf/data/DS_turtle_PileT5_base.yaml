@@ -1,0 +1,32 @@
+# @package _global_
+num_workers: 1
+syntax_name: "DS_turtle_pileT5_base"
+project: "PileT5"
+dataset_name: '/home/cringwald/EXP_env/datasets/t5_dbpedia.py'
+text_column: 'context'
+target_column: 'triplets'
+train_file: '/workspace/cringwald/exp4out/T5/SPLITTED/DS_turtle_train.json'
+validation_file: '/workspace/cringwald/exp4out/T5/SPLITTED/DS_turtle_val.json'
+test_file: '/workspace/cringwald/exp4out/T5/SPLITTED/DS_turtle_test.json'
+shape_file: '/workspace/cringwald/exp4out/PersonShape.ttl'
+overwrite_cache: True
+preprocessing_num_workers: 
+model_used: "pileT5"
+model_size: "base"
+add_vocab: True
+inline_mode: False
+datatype: True
+facto: True
+max_source_length: 512
+max_target_length: 512
+val_max_target_length: 512
+pad_to_max_length:  False
+max_train_samples: 5000
+max_val_samples: 300
+max_test_samples: 300
+nb_folds: 5
+num_beams: 
+eval_beams: 3
+ignore_pad_token_for_loss: True
+source_prefix:
+relations_file:
