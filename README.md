@@ -1,4 +1,4 @@
-# 12ShadesOfRDFSyntax
+# 12ShadesOfRDFSyntax 
 
 ![QuestionIllustration](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/Screenshot%20from%202024-02-16%2016-49-51.png)
 
@@ -40,12 +40,20 @@ isbn="978-3-031-78952-6"
 
 
 ```
- 
+ # [UPDATE] Extended Benchmark 
+
+We recently completed the benchmark by integrating three others models:
+
+![QuestionIllustration](https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/Models.png)
+
 
 This material is based on a fork of [REBEL](https://github.com/Babelscape/rebel/tree/main)
 
-> All the finetuned model, results and training details are available here : [https://wandb.ai/celian-ringwald/12ShadesOfRDF](https://wandb.ai/celian-ringwald/12ShadesOfRDF)
+But we also proposed a new Turtle syntax: [Turtle Ultra light](#35-turtle-ultra-light)
 
+> All the finetuned model, results and training details are available here :
+> * [https://wandb.ai/celian-ringwald/12ShadesOfRDF](https://wandb.ai/celian-ringwald/12ShadesOfRDF)
+> * [https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension](https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension)
 
 ## Methodological framework
 
@@ -61,7 +69,8 @@ This material is based on a fork of [REBEL](https://github.com/Babelscape/rebel/
  * Specific parser and triples utils: https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/src/triples_fct.py 
  * Metrics computation implementation: https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/src/score_fct.py, https://github.com/datalogism/12ShadesOfRDFSyntax/blob/main/src/score.py
 
-[EDIT]: After review we better formalise our training behaviors metrics for more details check [this page](https://github.com/datalogism/12ShadesOfRDFSyntax/tree/main/eval)
+[EDIT]: We better formalise our training behaviors metrics for more details check [this page](https://github.com/datalogism/12ShadesOfRDFSyntax/tree/main/eval)
+[EDIT]: We recently proposed a new script to automatise the computation of the meta-metatrics from wandb
 
 ## SHACL Shape used
 ```
@@ -335,20 +344,25 @@ syntax_vocab=syntax_vocab+[".",",",";","\n",":","<",">"]
    :birthDate "1987-04-19" ;
    :birthYear "1987".
 ```
-#### 3.1. Turtle Light factorised / in-line
+#### 3.2. Turtle Light factorised / in-line
 ```
 :Homer_Simpson a :Person ; :label "Homer Simpson" ; :birthDate "1987-04-19" ; :birthYear "1987".
 ```
-#### 3.1. Turtle Light not factorised / multilines
+#### 3.3. Turtle Light not factorised / multilines
 ```
 :Homer_Simpson a :Person ;
 :Homer_Simpson :label "Homer Simpson" ;
 :Homer_Simpson :birthDate "1987-04-19" ;
 :Homer_Simpson :birthYear "1987".
 ```
-#### 3.1. Turtle Light not factorised / in-line
+#### 3.4. Turtle Light not factorised / in-line
 ```
 :Homer_Simpson a :Person ; :Homer_Simpson :label "Homer Simpson" ; :Homer_Simpson :birthDate "1987-04-19" ; :Homer_Simpson :birthYear "1987".
+```
+
+#### 3.5. Turtle Ultra Light
+```
+Homer_Simpson a Person ; label "Homer Simpson" ; birthDate "1987-04-19" ; birthYear "1987".
 ```
 
 ## RUNNING EXPERIMENTS
