@@ -3,7 +3,7 @@ import hydra
 import torch
 import os
 import os.path as osp
-from transformers import AutoConfig, AutoModelForSeq2SeqLM, AutoTokenizer, T5Tokenizer, AddedToken
+from transformers import AutoConfig,AutoModel, AutoModelForSeq2SeqLM, AutoTokenizer, T5Tokenizer, AddedToken, RobertaTokenizer
 import lightning.pytorch as pl
 import json
 from lightning.pytorch.utilities import rank_zero_info
@@ -12,6 +12,7 @@ from lightning.pytorch.loggers.wandb import WandbLogger
 from kfold.datamodule import KFoldDataModule
 from rdflib import Graph
 #from pl_crossvalidate import KFoldTrainer
+import datasets, os
 import wandb
 ##from kfold.trainer import KFoldTrainer
 from pl_data_modules import BasePLDataModule
@@ -34,7 +35,8 @@ def report_gpu():
 
 def train(conf: omegaconf.DictConfig) -> None:
     pl.seed_everything(conf.seed)
-    
+    root_path_model = os.environ['DSDIR'] + '/HuggingFace_Models'
+
     print(">>>>>>>>>>>>>>>> EXTRACTION FROM SHAPE")
     print(conf.shape_file)
 
@@ -147,13 +149,16 @@ def train(conf: omegaconf.DictConfig) -> None:
 
         all_vocab=list(set(syntax_vocab))
 
+    print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> BEFORE LOADING")
     config = AutoConfig.from_pretrained(
-        conf.config_name if conf.config_name else conf.model_name_or_path,
+        root_path_model+"/"+conf.config_name if conf.config_name else conf.model_name_or_path,
         decoder_start_token_id = 0,
         #early_stopping = False,
         no_repeat_ngram_size = 0,
         dropout=conf.dropout,
         forced_bos_token_id=None,
+        trust_remote_code=True
+
     )
     
     print("USE FAST >>>>>>>>>>>>",conf.use_fast_tokenizer)
@@ -161,17 +166,24 @@ def train(conf: omegaconf.DictConfig) -> None:
         "use_fast": conf.use_fast_tokenizer,
         #"add_tokens": all_vocab
     }
-
-    if("t5" in conf.dataset_name):
+    if("codet5" in conf.model_name_or_path):
+        print("CODE T5 TOKENIZER")
+        tokenizer = RobertaTokenizer.from_pretrained(
+            root_path_model+"/"+conf.tokenizer_name if conf.tokenizer_name else conf.model_name_or_path,
+            trust_remote_code=True,
+            **tokenizer_kwargs
+        )
+    elif("t5" in conf.model_name_or_path and not "flan-t5" in conf.model_name_or_path  and not "mt5" in conf.model_name_or_path ):
         # torch.backends.cuda.matmul.allow_tf32 = True
         # torch.backends.cudnn.allow_tf32 = True
         tokenizer = T5Tokenizer.from_pretrained(
-            conf.tokenizer_name if conf.tokenizer_name else conf.model_name_or_path,
+            root_path_model+"/"+conf.tokenizer_name if conf.tokenizer_name else conf.model_name_or_path,
             **tokenizer_kwargs
         )
     else:
+        
         tokenizer = AutoTokenizer.from_pretrained(
-            conf.tokenizer_name if conf.tokenizer_name else conf.model_name_or_path,
+            root_path_model+"/"+conf.tokenizer_name if conf.tokenizer_name else conf.model_name_or_path,
             **tokenizer_kwargs
         )
 
@@ -179,12 +191,24 @@ def train(conf: omegaconf.DictConfig) -> None:
   
     if("gpt" in conf.model_name_or_path):
         model = AutoModelForCausalLM.from_pretrained(
-            conf.model_name_or_path,
+            root_path_model+"/"+conf.model_name_or_path,
             config=config,
         )
+    elif("codet5p-220m" in conf.model_name_or_path):
+        model = AutoModel.from_pretrained(
+                root_path_model+"/"+conf.model_name_or_path,
+                low_cpu_mem_usage=True,
+                trust_remote_code=True,
+                config=config)
+    elif("codet5" in conf.model_name_or_path):
+        model = AutoModelForSeq2SeqLM.from_pretrained(
+                root_path_model+"/"+conf.model_name_or_path,
+                low_cpu_mem_usage=True,
+                trust_remote_code=True,
+                config=config)
     else:
         model = AutoModelForSeq2SeqLM.from_pretrained(
-            conf.model_name_or_path,
+            root_path_model+"/"+conf.model_name_or_path,
             config=config,
         )
 
@@ -218,28 +242,32 @@ def train(conf: omegaconf.DictConfig) -> None:
     tokenizer.add_tokens(all_vocab)
 
     ########### TEST IT
+
+    model_name=conf.config_name.split("/")[-1]
+    project=conf.project
+    group=conf.syntax_name+"_"+model_name
+
+
     print("SAVE TOKENIZE VOCAB >")
-    tokenizer.save_pretrained( f'experiments/experiments/{conf.model_name}_tokenizer')
+    tokenizer.save_pretrained( f'experiments/experiments/{conf.syntax_name}_tokenizer')
     print("SAVED TOKENIZE VOCAB !")
 
 
     print("SIZE AFTER >",len(tokenizer))
     model.resize_token_embeddings(len(tokenizer))
-    model_name=conf.config_name.split("/")[-1]
 
     ### ADDED FOR LOCAL
     #model.to(torch.device('cpu'))
         # data module declaration
     print("TRAIN FILE")
     print(conf.train_file)
+    
     pl_data_module = BasePLDataModule(conf, tokenizer, model)
 
     train_dataloader=pl_data_module.train_dataloader()
     val_dataloader=pl_data_module.val_dataloader()
     
 
-    project=conf.project
-    group=conf.syntax_name+"_"+model_name
 
 
 
@@ -263,7 +291,7 @@ def train(conf: omegaconf.DictConfig) -> None:
             ModelCheckpoint(
                 monitor=conf.monitor_var,
                 # monitor=None,
-                dirpath=f'experiments/{conf.model_name}',
+                dirpath=f'experiments/{group}',
                 save_top_k=conf.save_top_k,
                 save_last=True,
                 mode=conf.monitor_var_mode
@@ -300,7 +328,7 @@ def train(conf: omegaconf.DictConfig) -> None:
         res = trainer.test(model=pl_module, datamodule=pl_data_module, verbose=False)
         results.append(res)
         wandb.finish()
-        path = osp.join(trainer.log_dir, conf.syntax_name+"_"+model_name+"_withoutCVresults.json")
+        path = osp.join(trainer.log_dir, group+"_withoutCVresults.json")
         with open(path, "w") as outfile:
             json.dump(results, outfile)
 
@@ -308,7 +336,7 @@ def train(conf: omegaconf.DictConfig) -> None:
 
         print("===================> CREATE DIR")
         test_save={"test":"test"}
-        with open( 'test_save.json', "w") as outfile:
+        with open( group+'test_save.json', "w") as outfile:
             json.dump(test_save, outfile)
 
         kfold_data_module=KFoldDataModule(
@@ -426,7 +454,7 @@ def train(conf: omegaconf.DictConfig) -> None:
         print("SAVE DATA")
 
         # path = osp.join(trainer.log_dir, conf.syntax_name+"_"+model_name+"_"+conf.nb_folds+"_fold_valid_test_data.json")
-        with open( 'all_data.json', "w") as outfile:
+        with open( group+'all_data.json', "w") as outfile:
             json.dump(all_data_exp, outfile)
 
 @hydra.main(config_path='../conf', config_name='root')

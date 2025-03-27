@@ -22,6 +22,8 @@ def cleanDecoded3(labels):
     clean=clean.replace(' "/>','"/>').replace(' ">','">')
     # turtle
     #.replace(' "','"')
+    #json
+    clean=clean.replace(' ":"','":"')
     clean=clean.replace(":<",": <").replace(" ^","^").replace("^ ","^")
     # ntriples
     clean=clean.replace("><","> <")
@@ -35,6 +37,8 @@ def cleanDecoded2(labels):
     clean=clean.replace(' "/>','"/>').replace(' ">','">')
     # turtle
     #.replace(' "','"')
+    #json
+    clean=clean.replace(' ":"','":"')
     clean=clean.replace(":<",": <").replace(" ^","^").replace("^ ","^")
     # ntriples
     clean=clean.replace("><","> <")
@@ -50,6 +54,8 @@ def cleanDecoded(list_labels):
         clean=clean.replace(' "/>','"/>').replace(' ">','">')
         # turtle
         #.replace(' "','"')
+        #json
+        clean=clean.replace(' ":"','":"')
         clean=clean.replace(":<",": <").replace(" ^","^").replace("^ ","^")
         # ntriples
         clean=clean.replace("><","> <")

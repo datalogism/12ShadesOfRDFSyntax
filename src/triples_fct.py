@@ -168,9 +168,6 @@ def FactorisedTagTOTag(tags):
                         
         
     return flat_list
-        
-        
-    
     
 def TurtleToTag(t, facto=True):
     to_list=TurtleToList(t, facto)
