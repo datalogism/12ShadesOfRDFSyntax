@@ -1,281 +1,366 @@
-#!/usr/bin/env python
-import argparse
-import sys
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Apr 22 07:38:39 2025
+
+@author: cringwal
+"""
+
+
+
 import json 
-import os 
-import os.path
+import pandas as pd
+import statistics
+
 import wandb
 
-################################ THIS SCRIPT IS USED TO EXTRACT FROM THE SERVER DATA RELATED TO MODELS AND MORE
-# 
-# python getCheckpointForTest.py  "/home/cringwald/EXP_env/output/" "/home/cringwald/EXP_env/results_exp"
-#######################  INPUTS:
-# - dir :   A DIRECTORY CONTAINING THE MODELS ARTIFACTS SAVED DURING & AFTER FINETUNING
-# - output : path OF JSON FILE produced at the end
+api = wandb.Api()
+API_KEY="YOUR API KEY"
+wandb.login(key=API_KEY)
+All_data=[]
+####################" THIS FUNCTION ALLOWS TO 
+def getHistoryMetrics(run):
 
-def parse_args():
-    parser=argparse.ArgumentParser(description="a script to do stuff")
-    parser.add_argument("dir")
-    parser.add_argument("output")
-    args=parser.parse_args()
-    return args
+    ###################### INIT EVERY VALUES
+    #### F1 MACRO
+    saturation_threshold=0.9
+    F1_macro_saturated=False
+    F1_macro_forgetting=0
+    F1_macro_first_sat=None  
+    F1_macro_broken_steps=[]   
+    #### F1 MICRO
+    F1_micro_saturated=False
+    F1_micro_forgetting=0
+    F1_micro_first_sat=None  
+    F1_micro_broken_steps=[]  
+    #### PARSING
+    parsed_saturated=False
+    parse_forgetting=0
+    parsed_first_sat=None
+    parsed_broken_steps=[]
+    
+    ################## GET THE COMPLETE HISTORIC FROM WANDB
+    complete_hist={}
+    #for i, row in run.history().iterrows():
+    for row in run.scan_history():
+        if str(row["epoch"])!="nan" and "val_loss" in row.keys() and str(row["val_loss"])!="nan":
+            epo=str(row["epoch"]).replace(".0","")
+            if(str(epo)!="None" ):  
+                complete_hist[epo]={"val_loss":row["val_loss"],'val_part_parsed':row["val_part_parsed"],'val_F1_macro':row["val_F1_macro"],'val_F1_micro':row["val_F1_micro"]}
+    
+    ############# INIT VAL RELATED TO SAT
+    #### PARSING
+    last_val_part_parsed=None
+    sat_val_part_parsed=None
+    #### F1 MACRO
+    last_val_F1_macro=None
+    sat_val_F1_macro=None
+    #### F1 MICRO
+    last_val_F1_micro=None
+    sat_val_F1_micro=None
+    F1_RPT_sat=None
+    ################################## ITERATE THE HISTORY
+    for epoch in complete_hist.keys():
+        print(epoch)
+        nb_epoch=int(epoch)
+        current_stats=complete_hist[epoch]
+        
+        ################################## PARSING
+        if("val_part_parsed" in current_stats.keys()):
+            val_part_parsed=current_stats["val_part_parsed"]
+            ############## IF VALUE NOT NONE
+            if(val_part_parsed and str(val_part_parsed)!="nan"):
+                last_val_part_parsed=val_part_parsed
+                ############ DIDN'T SATURATE FOR THE MOMENT
+                if(parsed_saturated == False):                  
+                    ######### SATURATION ? 
+                    if(val_part_parsed>saturation_threshold):
+                        parsed_saturated=True
+                        parsed_first_sat=int(epoch)
+                        sat_val_part_parsed=val_part_parsed
+                        F1_RPT_sat=current_stats["val_F1_micro"]
+                        print("SATURATE PARSING")
+                        print("val_part_parsed: ",current_stats["val_part_parsed"])
+                        print("val_F1+",current_stats["val_F1_micro"])
+                ############ ALREADY SATURATE > BROKEN STEPS ? 
+                elif(parsed_saturated and val_part_parsed < saturation_threshold ):
+                    parsed_broken_steps.append(int(epoch))
+            
+        if("val_F1_macro" in current_stats.keys()):
+            #print(current_stats)
+            val_F1_macro=current_stats["val_F1_macro"]
+            ############## IF VALUE NOT NONE
+            if(val_F1_macro and str(val_F1_macro)!="nan"):
+                last_val_F1_macro=val_F1_macro
+                ############ DIDN'T SATURATE FOR THE MOMENT
+                if(F1_macro_saturated == False):               
+                    ######### SATURATION ?                 
+                    if(val_F1_macro>saturation_threshold):
+                        F1_macro_saturated=True
+                        F1_macro_first_sat=int(epoch)
+                        sat_val_F1_macro=val_F1_macro
+                ############ ALREADY SATURATE > BROKEN STEPS ? 
+                elif(F1_macro_saturated and val_F1_macro < saturation_threshold):
+                    F1_macro_broken_steps.append(int(epoch))
 
-def main():
-    print("this is the main function")
-    inputs=parse_args()
-    mypath=inputs.dir
-
-    print("=====================BEGIN============================")
-    print("output path: ",mypath)
-    print("output file: ",inputs.output)
-
-    print("====================> GET WANDB RUN IDS")
-
-    api = wandb.Api()
-    ################" HERE  THE WANDB API KEY
-    API_KEY="#######################"
-    wandb.login(key=API_KEY)
-    entities=["celian-ringwald","inria_test"]
-    data_run={}
-    for ent in entities:
-        #data[ent]={}
-        projects=api.projects(entity=ent)
-        for p in projects:
-
-             #### GET API DATA FOR LATTER MAPPING RUNS ID TO A SET OF FILES 
-             runs=api.runs(
-                path=ent+"/"+p.name
-             )
-             
-
-             for r in runs:
-                if(r.state=="finished"):
-                    name=r.name
-                    splitted=name.split('_')
-                    fold=None
-                    if(splitted[-1] in ["0","1","2","3","4"]):
-                        fold=splitted[-1] 
-                        data_run[r.id]={"space":ent,"project":p.name,"group":r.group,"name":name,"fold":fold}
-
-                        for k in ["model_name_or_path","add_vocab","synthax","inline_mode","facto"]:
-                            if(k in r.config.keys()):
-                                data_run[r.id][k]=r.config[k]
-
-    results_all={}
-    ###############  GET FILES DATA
-    dir_date_list=os.listdir(mypath)
-    for dir_date in dir_date_list:
-        path_date=os.path.join(mypath,dir_date)
-        is_dir=os.path.isdir(path_date)
-        if(is_dir):
-            if(len(dir_date)==10 and dir_date[0:4]=="2024" and (int(dir_date[5:7])==1 and int(dir_date[8:10])>20) or int(dir_date[5:7])>1):
-                print("-",dir_date)
-                dir_hour_list=os.listdir(path_date)
-                for dir_hour in dir_hour_list:
-                    if(len(dir_hour)==8): 
-                        CURRENT_PROJECT=None
-                        tkz_dir_exist=False
-                        data_summary=None
-                        wandb_runs=[]
-                        path_date_hour=os.path.join(path_date,dir_hour)
-                        # print("--",path_date_hour)
-                        path_date_hour_list=os.listdir(path_date_hour)
-                        WANDB_data_path=os.path.join(path_date_hour,"wandb")
-                        WANDB_data_exist=os.path.isdir(WANDB_data_path)
-                        if(WANDB_data_exist):
-                            dir_list_wandb=os.listdir(WANDB_data_path)
-                            for wandb_dir in dir_list_wandb:
-                                if("run" in wandb_dir):
-                                    run_id=wandb_dir.split("-")[-1]
-                                    if(run_id in data_run.keys()):
-                                        wandb_runs.append(run_id)
-
-                        # else:
-                        #     print("not in WANDB")
-                        MODEL_data_path=os.path.join(path_date_hour,"experiments")
-                        MODEL_data_exist=os.path.isdir(MODEL_data_path)
-                        data_summary_path=os.path.join(path_date_hour,"all_data.json")
-                        data_summary_exist=os.path.isfile(data_summary_path)
-                        CKPT_path=None
-                        if(data_summary_exist==False):
-                        #     print('DATA SUMMARY OK')
-                        # else:
-                            carbon_raw_path=os.path.join(path_date_hour,"emissions.csv")
-                            carbon_raw_exist=os.path.isfile(carbon_raw_path)
-                            # if(carbon_raw_exist):
-                            #     print('RAW DATA SUMMARY OK')
-                        if(MODEL_data_exist):
-                            MODAL_data_list=os.listdir(MODEL_data_path)
-                            for di in MODAL_data_list:
-
-                                if(di=="experiments"):
-                                    tokenizer_path=os.path.join(MODEL_data_path,"experiments")
-                                    tkz_dir_exist=os.path.isdir(tokenizer_path)
-                                    if(tkz_dir_exist):       
-
-                                        dir_list7=os.listdir(tokenizer_path)
-                                        if(len(dir_list7)==1):
-                                            #print("TOKENIZER OK")
-                                            exact_tokenizer_path1=os.path.join(tokenizer_path,dir_list7[0])
-                                            #print("> path : ",exact_tokenizer_path1)
-                                        # else:
-                                        #     print("PB:TOKENIZER")
-                                else:
-                                    CURRENT_PROJECT=di
-                                    CKPT_path=os.path.join(MODEL_data_path ,di)
-                        if(CURRENT_PROJECT and CKPT_path and len(wandb_runs)>0): 
-                            #print("CURRENT_PROJECT ? ",CURRENT_PROJECT)
-                            ckpt_list=os.listdir(CKPT_path)
-                            if(len(ckpt_list)>0):
-                                #print("-",ckpt_list)
-                                dict_checkpoint={}
-                                for file_cpt in ckpt_list:
-                                    ext_ok=file_cpt[len(file_cpt)-len(".ckpt"):len(file_cpt)]
-                                    if(file_cpt[0]!="." and ext_ok==".ckpt"):
-                                        clean_f_name=file_cpt.replace(".ckpt", "")
-                                        if("epoch" in clean_f_name):
-                                            data_cpt=clean_f_name.split("-epoch=")
-                                            #print(data_cpt)
-                                            if(len(data_cpt)==2):
-                                                model_name_all=data_cpt[0].split("_")
-                                                if(len(model_name_all[-1])==1):
-                                                    fold=model_name_all[-1]
-                                                    model_name=data_cpt[0].replace("_"+fold,"")
-                                                    
-                                                    #print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",model_name)
-                                                    data_cpt2=data_cpt[1].split("-val_loss=")
-                                                    if(len(data_cpt2)==2):
-                                                        epoch=data_cpt2[0]
-                                                        val_loss=data_cpt2[1]
-                                                        if(fold not in dict_checkpoint.keys()):
-                                                            dict_checkpoint[fold]=[]
-                                                            
-                                                        dict_checkpoint[fold].append({"epoch": epoch,"val_loss":val_loss,"file_path":file_cpt})
-                                        elif("last" in clean_f_name):
-                                            if("-" in clean_f_name):
-                                                split_v=clean_f_name.replace("v","").split("-")
-                                                current_fold=split_v[1]
-                                                
-                                            else:
-                                                current_fold="0"
-
-                                            if(current_fold not in dict_checkpoint.keys()):
-                                                dict_checkpoint[current_fold]=[]
-                                            dict_checkpoint[current_fold].append({"epoch": "last","val_loss":"unk","file_path":file_cpt})
-
-                                print("========================================")
-                                print(">>>>",dir_hour)
-                                #print("-wandb:",WANDB_data_exist)
-                                have_check_point=len(dict_checkpoint.keys())>0 and len(dict_checkpoint.keys())==5
-                                if(WANDB_data_exist):
-                                    project=data_run[wandb_runs[0]]["project"]
-                                    if(project not in results_all.keys()):
-                                        results_all[project]={}
-
-                                    group=data_run[wandb_runs[0]]["group"]
-                                    if group and str(group)!="":
-                                        if(group not in results_all[project].keys()):
-                                            results_all[project][group]={"date":dir_date,"summary":None,"tokenizer_path":None,"ckpt":{},"runs":{}}
-
-                                        for id_run in wandb_runs:
-
-                                            fold_id=data_run[id_run]["fold"]
-                                            name=data_run[id_run]["name"]
-                                            space=data_run[id_run]["space"]
-                                            results_all[project][group]["runs"][fold_id]={"id_run":id_run,
-                                            "name":name,
-                                            "space":space,
-                                            "project":project,
-                                            "group":group
-                                            }
-
-
-                                        ############ NAME BUILDING    
-                                        tmp_model=data_run[id_run]["model_name_or_path"]
-                                        temp_name=""
-                                        results_all[project][group]["model_name_or_path"]=tmp_model
-                                        if("bart" in tmp_model):
-                                            temp_name="B"
-                                            if("base" in tmp_model):
-                                                temp_name+="_b"
-                                            if("small" in tmp_model):
-                                                temp_name+="_s"
-                                            if("large" in tmp_model):
-                                                temp_name+="_l"
-
+        if("val_F1_micro" in current_stats.keys()):
+            #print(current_stats)
+            val_F1_micro=current_stats["val_F1_micro"]
+            ############## IF VALUE NOT NONE
+            if(val_F1_micro and str(val_F1_micro)!="nan"):
+                last_val_F1_micro=val_F1_micro
+                ############ DIDN'T SATURATE FOR THE MOMENT
+                if(F1_micro_saturated == False):                
+                    ######### SATURATION ?                 
+                    if(val_F1_micro>saturation_threshold):
+                        F1_micro_saturated=True
+                        F1_micro_first_sat=int(epoch)
+                        sat_val_F1_micro=val_F1_micro
+                ############ ALREADY SATURATE > BROKEN STEPS ? 
+                elif(F1_micro_saturated and val_F1_micro < saturation_threshold):
+                    F1_micro_broken_steps.append(int(epoch))
                     
+    ################## COMPUTE STABILITY
+    ##### F1 MACRO
+    #F1_macro_broken_ratio=None
+    F1_macro_broken_ratio=0
+    if(F1_macro_saturated):
+        F1_macro_first_sat=int(F1_macro_first_sat)    
+        if(saturation_threshold>last_val_F1_macro):
+            F1_macro_forgetting=1
+        #if(len(F1_macro_broken_steps)>0 ):
+        F1_macro_broken_ratio=1-len(F1_macro_broken_steps)/(nb_epoch)
+    ##### F1 MICRO
+    #F1_micro_broken_ratio=None
+    F1_micro_broken_ratio=0
+    if(F1_micro_saturated):
+        F1_micro_first_sat=int(F1_micro_first_sat)    
+        if(saturation_threshold>last_val_F1_micro):
+            F1_micro_forgetting=1
+        #if(len(F1_micro_broken_steps)>0 ):
+        F1_micro_broken_ratio=1-len(F1_micro_broken_steps)/(nb_epoch)
+   
+    
+    ##### PARSING
+    #parsed_broken_ratio=None
+    parsed_broken_ratio=0
+    if(parsed_saturated):  
+       # print("parsed_first_sat>",parsed_first_sat)
+        parsed_first_sat=int(parsed_first_sat)
+           
+        if(saturation_threshold>last_val_part_parsed):
+            parse_forgetting=1
+        #if(len(parsed_broken_steps)>0 ):
+        parsed_broken_ratio=1-len(parsed_broken_steps)/(nb_epoch)
 
-                                        elif("t5" in tmp_model):
-                                            temp_name="T5"
-                                            if("base" in tmp_model):
-                                                temp_name+="_b"
-                                            if("small" in tmp_model):
-                                                temp_name+="_s"
-                                            if("large" in tmp_model):
-                                                temp_name+="_l"
+    ############# DID IT SATURATE DURING THE CURRENT FOLDS ? 
+    parse_sat=None
+    if(parsed_saturated):
+        parse_sat=1
+    F1_macro_sat=None
+    if(F1_macro_saturated):
+        F1_macro_sat=1
+    F1_micro_sat=None
+    if(F1_micro_saturated):
+        F1_micro_sat=1
+        
+    return {"F1_RPT_sat":F1_RPT_sat,"F1_macro_sat":F1_macro_sat,"F1_macro_forgetting":F1_macro_forgetting,"F1_macro_first_sat":F1_macro_first_sat,"F1_macro_broken_ratio":F1_macro_broken_ratio,
+    "F1_micro_sat":F1_micro_sat,"F1_micro_forgetting":F1_micro_forgetting,"F1_micro_first_sat":F1_micro_first_sat,"F1_micro_broken_ratio":F1_micro_broken_ratio,
+    "parse_forgetting":parse_forgetting, "parsed_first_sat":parsed_first_sat,"parse_sat":parse_sat,"parsed_broken_ratio":parsed_broken_ratio}
 
-                                        ################ VOCAB
-                                        if("add_vocab" in data_run[id_run].keys()):
-                                            add_vocab=data_run[id_run]["add_vocab"]
-                                            if(add_vocab==True):
-                                                 temp_name+="_v"
-                                            results_all[project][group]["add_vocab"]=add_vocab
-                                        syntax="None?"
-                                        ################ SYNTHAX
-                                        if("xml" in group):
-                                            syntax="xml"
-                                            temp_name+="_x"
-                                        elif("ntriples" in group):
-                                            syntax="ntriples"
-                                            temp_name+="_n"
-                                        elif("json-ld" in group):
-                                            syntax="json-ld"
-                                            temp_name+="_j"
-                                        elif("turtle_" in group):
-                                            syntax="turtle"
-                                            temp_name+="_T"
-                                        elif("list" in group):
-                                            syntax="list"
-                                            temp_name+="_l"
-                                        elif("tags" in group):
-                                            syntax="tags"
-                                            temp_name+="_g"
-                                        elif("turtleS" in group or "turtleLight" in group):
-                                            syntax="turtleLight"
-                                            temp_name+="_t"
+#,"240ShadesOfSyntaxT5","CodeModels","OtherT5Models"
+configs_dict={"T5_b_v_j":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_json-ld_T5_base_t5-base","B_b_v_g_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_tags_facto_BART_base_bart-base","B_b_v_u":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_TurtleUtlraLight_BART_bart-base","T5_b_v_u":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_TurtleUtlraLight_T5_t5-base","B_b_v_t_1_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_turtleLight_1inLine_1facto_BART_base_bart-base","B_b_v_T":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_turtle_BART_base_bart-base","T5_b_v_t_1_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_turtleS_1inLine_1facto_T5_base_t5-base","T5_b_v_x":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_xml_T5_base_t5-base","B_b_v_g":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_tags_BART_base_bart-base","T5_b_v_l":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_list_T5_base_t5-base","B_b_v_l_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_list_facto_BART_base_bart-base","B_b_v_l":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_list_BART_base_bart-base","B_b_v_t_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_turtleLight_0inLine_1facto_BART_base_bart-base","T5_b_v_g_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_tags_facto_T5_base_t5-base","T5_b_v_t_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_turtleS_0inLine_1facto_T5_base_t5-base","B_b_v_j":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_json-ld_BART_base_bart-base","B_b_v_x":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_xml_BART_base_bart-base","T5_b_v_t_1":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_turtleS_1inLine_0facto_T5_base_t5-base","T5_b_v_l_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_list_facto_T5_base_t5-base","B_b_v_n":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_ntriples_BART_base_bart-base","T5_b_v_g":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_tags_T5_base_t5-base","T5_b_v_t":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_turtleS_0inLine_0facto_T5_base_t5-base","B_b_v_t_1":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_turtleLight_1inLine_0facto_BART_base_bart-base","B_b_v_t":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_turtleLight_0inLine_0facto_BART_base_bart-base","cT5_b_v_T":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/BASE_DS_turtle_codeT5_base_VOCAB512_codet5-base","cT5_b_v_t_1_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/BASE_DS_turtleS_0datatype_1inLine_1facto_codeT5_base_VOCAB2512_codet5-base","cT5_b_v_l":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_list_codet5_base512_codet5-base","cT5_b_v_t_1":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/BASE_DS_turtleS_0datatype_1inLine_0facto_codeT5_base_VOCAB2512_codet5-base","cT5_b_v_l_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_list_facto_codet5_base512_codet5-base","T5_b_v_T":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_turtle_T5_base_t5-base","cT5_b_v_t_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/BASE_DS_turtleS_0datatype_0inLine_1facto_codeT5_base_VOCAB2512_codet5-base","T5_b_v_n":"https://wandb.ai/celian-ringwald/12ShadesOfRDF/groups/DS_ntriples_T5_base_t5-base","cT5_b_v_t":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/BASE_DS_turtleS_0datatype_0inLine_0facto_codeT5_base_VOCAB2512_codet5-base","cT5_b_v_n":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/BASE_DS_ntriples_codeT5_base_VOCAB512_codet5-base","cT5_b_v_g":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_tags_codet5_base512_codet5-base","cT5_b_v_g_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_tags_facto_codet5_base512_codet5-base","cT5_b_v_u":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_TurtleUtlraLight_codeT5_codet5-base","cT5_b_v_j":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/BASE_DS_json-ld_codeT5_base_VOCAB512_codet5-base","pileT5_b_v_t_1":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_turtleS_0datatype_1inLine_0facto_PileT5_base_pile-t5-base","flanT5_b_v_l_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_list_facto_codet5_base512_codet5-base","flanT5_b_v_u":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_TurtleUtlraLight_flanT5_flan-t5-base","cT5_b_v_x":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_xml_T5_base_codeT5_base_VOCAB512_codet5-base","pileT5_b_v_n":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_ntriples_PileT5_base_pile-t5-base","pileT5_b_v_t_1_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_turtleS_0datatype_1inLine_1facto_PileT5_base_pile-t5-base","pileT5_b_v_u":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_TurtleUtlraLight_pileT5_pile-t5-base","pileT5_b_v_g":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_tags_PileT5_base_pile-t5-base","pileT5_b_v_l_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_list_facto_PileT5_base_pile-t5-base","flanT5_b_v_g":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_tags_flant_tokenizer_OK_flan-t5-base","flanT5_b_v_t_1_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_turtleS_0datatype_1inLine_1facto_flant_tokenizer_OK_flan-t5-base","flanT5_b_v_g_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_tags_facto_flant_tokenizer_OK_flan-t5-base","pileT5_b_v_t":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_turtleS_0datatype_0inLine_0facto_PileT5_base_pile-t5-base","flanT5_b_v_t_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_turtleS_0datatype_0inLine_1facto_flant_tokenizer_OK_flan-t5-base","pileT5_b_v_x":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_xml_PileT5_base_pile-t5-base","pileT5_b_v_t_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_turtleS_0datatype_0inLine_1facto_PileT5_base_pile-t5-base","pileT5_b_v_T":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_turtle_PileT5_base_pile-t5-base","pileT5_b_v_l":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_list_PileT5_base_pile-t5-base","pileT5_b_v_j":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_xml_PileT5_base_pile-t5-base","pileT5_b_v_g_f":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_tags_facto_PileT5_base_pile-t5-base","flanT5_b_v_x":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_xml_flant_tokenizer_OK_flan-t5-base","flanT5_b_v_t_1":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_turtleS_0datatype_1inLine_0facto_flant_tokenizer_OK_flan-t5-base","flanT5_b_v_T":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_turtle_flant_tokenizer_OK_flan-t5-base","flanT5_b_v_t":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_turtleS_0datatype_0inLine_0facto_flant_tokenizer_OK_flan-t5-base","flanT5_b_v_n":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_ntriples_flant_tokenizer_OK_flan-t5-base","flanT5_b_v_l":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_list_flant_tokenizer_OK_flan-t5-base","flanT5_b_v_j":"https://wandb.ai/celian-ringwald/12ShadesOfRDFExtension/groups/DS_json-ld_flant_tokenizer_OK_flan-t5-base"}
+for tag_name in configs_dict.keys():
+#entity="celian-ringwald"
+    model_uri=configs_dict[tag_name]
+    
+    print(model_uri)
+    model_uri_split=model_uri.replace("https://wandb.ai/","").split("/")
+    entity=model_uri_split[0]
+    project=model_uri_split[1]
+    group=model_uri_split[-1]
+    print(entity,project,group)
 
-                                        if("inline_mode" in data_run[id_run].keys()):
-                                            inline=data_run[id_run]["inline_mode"]
-                                            results_all[project][group]["inline_mode"]=inline
-                                            if(inline==True and syntax in ["turtleLight"]):
-                                                temp_name+="_1"
+#for c in configs_:
+    #group=c["group"]
+    #tag_name=c["tag_name"]
+    best_score=0
+    path_best=None
+    print("================================")
+    #if(results_data[project][k]["tag_name"]=="T5_b_v_j"):
+    col_int=[
+        "F1_micro_first_sat","F1_micro_broken_ratio",
+        "F1_macro_first_sat","F1_macro_broken_ratio",
+        "parsed_first_sat","parsed_broken_ratio",
+        ]
+    col_std=["test_F1_micro",
+    "test_F1_macro"]
+    col_means=["test_F1_micro",
+    "test_F1_macro",
+   # "test_prec_macro",
+   # "test_recall_macro",
+   # "test_prec_micro",
+    # "test_recall_micro",
+    #"test_dist_edit",
+    #"test_BLEU",
+    "test_part_parsed",
+    "test_part_subj_ok",
+    "test_part_valid",
+    #"val_loss",
+    #"carbon",
+    #"nb_epoch",
+    #"time",
+    "F1_RPT_sat",
+    "F1_micro_first_sat","F1_micro_broken_ratio",
+    "F1_macro_first_sat","F1_macro_broken_ratio",
+    "parsed_first_sat","parsed_broken_ratio"]
+    #,"nb_epoch",
+    
+    col_sums=["parse_forgetting","parse_sat","F1_micro_forgetting","F1_micro_sat","F1_macro_forgetting","F1_macro_sat"]
+    data_temp={}
+    runs= api.runs(
+        path=entity+"/"+project,
+        filters={"$or": [{"group": group}]}
+    )
+    n_folds=0
+    for run in runs:
+        name=run.name
+        print(name)
+        n_folds+=1
+        
+        fold_tt="fold"+name.split("_")[-1]
+        if fold_tt not in data_temp.keys():
+            data_temp[fold_tt]={}
+        data_temp[fold_tt]["nb_epoch"]=run.summary["epoch"]
+        data_temp[fold_tt]["time"]=run.summary["_runtime"]/60
+        
+        for col in col_means:
+            if(col not in data_temp[fold_tt].keys() or data_temp[fold_tt][col]==None):
+                if(col in run.summary.keys()):
+                    data_temp[fold_tt][col]= run.summary[col]
+                    ##########################################"" FIX HERE THE FACT DIST ISN'T COMPUTED WHEN PRED=GOLD
+                    if(col=="test_dist_edit" and str(run.summary[col]).lower()=="nan"):
+                        data_temp[fold_tt][col]= 0
+                else:
+                    print(">>>>>>>>>>col missing : ",col)
+                    data_temp[fold_tt][col]=None
+                    break
+        ############ HISTO METRICS
+        histo_metrics=getHistoryMetrics(run)
+        #print(histo_metrics)
+        for m in histo_metrics.keys():
+            data_temp[fold_tt][m]=histo_metrics[m]
+        
+        ##########################################"" FIX HERE THE FACT DIST ISN'T COMPUTED WHEN PRED=GOLD
+        for f in data_temp.keys():
+            if(f=="test_dist_edit" and str(run.summary[f]).lower()=="nan"):
+                data_temp[f]["test_dist_edit"]= 0
+            
+    if(n_folds>0):
+        data_temp2=[data_temp[k] for k in data_temp.keys()]
+        data_aggr={}
+        for col in col_int:
+            inf=False
+            list_val=[]
+            for d in data_temp2:
+               if col in d.keys():   
+                   print(col)
+                   if(d[col]!=None and str(d[col])!="NaN" and str(d[col])!="nan"):
+                       if(isinstance(d[col], (int, float, complex))):
+                           list_val.append(d[col])
+                   else:
+                       inf=True
+        for col in col_std:
+           vals=[]
+           nb=0
+           ok=True
+           for d in data_temp2:
+               if col in d.keys():
+                   #print(col,":",d[col])
+                   if(d[col]!=None and str(d[col])!="NaN" and str(d[col])!="nan"):
+                       vals.append(d[col])
+                       
+           if(len(vals)==n_folds): 
+               data_aggr[col+"_std"]=statistics.stdev(vals)
+           else:
+               data_aggr[col+"_std"]=None    
+               
+        for col in col_means:
+           sum_=0
+           nb=0
+           ok=True
+           for d in data_temp2:
+               if col in d.keys():
+                   #print(col,":",d[col])
+                   if(d[col]!=None and str(d[col])!="NaN" and str(d[col])!="nan"):
+                       sum_+=d[col]
+                       nb+=1
+                       
+           if(nb==n_folds): 
+               data_aggr[col]=sum_/nb
+           else:
+               data_aggr[col]=None
+                
+        for col in col_sums:
+            sum_=0
+            nb=0
+            for d in data_temp2:
+                if col in d.keys():
+                    if(d[col]!=None and str(d[col])!="NaN" and str(d[col])!="nan"):
+                        sum_+=d[col]
+                        nb+=1
+                    
+            if(nb==n_folds): 
+                data_aggr[col]=sum_
+            else:
+                data_aggr[col]=None
+            
+           # else:
+            #    data_aggr[col]=None
+        print("====================================")
+        print(data_aggr)
+        
+        print("====================================")
+        # and 'test_F1_macro' in data_aggr.keys()
+        
+        if(len(data_aggr.keys())>0 ):
+          test_F1_micro=data_aggr['test_F1_micro']
+          test_part_parsed=data_aggr['test_part_parsed']
+          test_part_subj_ok=0
+          test_part_valid=0
+          if(int(test_part_parsed)>0):
+              test_part_subj_ok=data_aggr['test_part_subj_ok']/test_part_parsed
+              test_part_valid=data_aggr['test_part_valid']/test_part_parsed
+          data_aggr['test_part_subj_ok']=test_part_subj_ok
+          data_aggr['test_part_valid']=test_part_valid
+          
+          score_all=test_F1_micro*test_part_parsed*test_part_subj_ok*test_part_valid
+          data_extended=data_aggr
+          for col in list(set(col_means+col_sums)):
+              if(col not in data_extended.keys()):
+                  data_extended[col]=None
+          data_extended["score"]=score_all
+          data_extended["tag_name"]=tag_name
+          All_data.append(data_extended)
+        
+    
+df = pd.DataFrame.from_dict(All_data)
+df2 = df.rename(columns={'test_part_parsed': 'R_TP', 'test_part_subj_ok': 'R_CS','test_part_valid':'R_SVT',
+                        "test_F1_micro":"F1-","test_F1_macro":"F1+",
+                        "test_prec_micro":"P-","test_prec_macro":"P+",
+                        "test_recall_micro":"R-","test_recall_macro":"R+",
+                        'test_BLEU':'B',"test_dist_edit":"lev",
+                        'F1_micro_sat':"Sat_F1-","F1_micro_first_sat":"V_F1-","F1_micro_broken_ratio":"S_F1-",'F1_micro_forgetting':"D_F1-",
+                        'F1_macro_sat':"Sat_F1+","F1_macro_first_sat":"V_F1+","F1_macro_broken_ratio":"S_F1+",'F1_macro_forgetting':"D_F1+",
+                        'parse_sat':"Sat_RTP","parsed_first_sat":"V_RTP","parsed_broken_ratio":"S_RTP","parse_forgetting":"D_RTP",
+                        'carbon':"Cc","time":"Tt","score":"Gg"
+                        })
+df2.to_csv("/user/cringwal/home/Desktop/New_RESULTS_SATURATION.csv")  
+#df3 = df2[["tag_name","R_TP", "R_CS", "R_SVT","F1-","F1+","P-","P+","R-","R+","B","lev","nb_epoch",
+#          "Sat_F1-","V_F1-","S_F1-","D_F1-","Sat_F1+","V_F1+","S_F1+","D_F1+",
+#          "Sat_RTP","V_RTP","S_RTP","D_RTP","Cc","Tt","Gg","val_loss",'tokenizer_path', 'date', 'syntax', 'space', 'add_vocab','path_best', 
+#        'model_name_or_path']]
+#df3.sort_values('Gg', ascending=False).to_csv("//user/cringwal/home/Desktop/THESE/New_RESULTS_SATURATION.csv")  
 
-                                        if("facto" in data_run[id_run].keys()):                     
-                                            facto= data_run[id_run]["facto"]              
-                                            results_all[project][group]["facto"]=facto
-                                            if(facto==True and syntax in ["turtleLight","list","tags"]):
-                                                temp_name+="_f"
-                                        results_all[project][group]["syntax"]=syntax
-                                        results_all[project][group]["space"]=data_run[id_run]["space"]
-                                        results_all[project][group]["tag_name"]=temp_name
-                                        
-                                        if(data_summary_exist):
-                                            with open(data_summary_path,encoding="utf-8") as json_file:
-                                               dataset_summary = json.load(json_file)
-                                               results_all[project][group]["summary"]=dataset_summary
-
-                                        if(tkz_dir_exist):
-                                            results_all[project][group]["tokenizer_path"]=tokenizer_path
-                                        if(have_check_point):
-                                            results_all[project][group]["ckpt"]=dict_checkpoint
 
 
-    print(results_all)    
-    print("SAVE")
-    with open(inputs.output, 'w', encoding='utf-8')  as f:
-        json.dump(results_all, f)
-    print("=====================END============================")
-
-
-if __name__ == '__main__':
-    main()
